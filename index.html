@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAP BTP RAP Employee Leave Management App</title>
+  <meta name="description" content="SAP BTP ABAP Environment RAP-based Fiori Elements Employee Leave Management App with CDS Views, Behavior Definitions, ABAP Unit Tests, and OData V4 Service.">
+  <!-- Google Fonts: Inter and Fira Code for SAP Fiori Code view -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Remixicon for modern SAP UI icon set -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- SAP Fiori Shell Header -->
+    <header class="fiori-shell">
+      <div class="shell-left">
+        <div class="shell-logo">
+          <span class="sap-badge">SAP BTP RAP</span>
+        </div>
+        <div class="shell-title-group">
+          <h1 class="shell-title">Employee Leave Management</h1>
+          <span class="shell-subtitle">RESTful Application Programming Model • OData V4 • Fiori Horizon UI</span>
+        </div>
+      </div>
+      <div class="shell-actions">
+        <button id="btn-theme-toggle" class="fiori-btn icon-btn" title="Toggle Theme (Morning Light / Dark Horizon)">
+          <i class="ri-sun-line"></i>
+        </button>
+        <button id="btn-reset-data" class="fiori-btn secondary-btn" title="Reset Database to Initial State">
+          <i class="ri-refresh-line"></i> Reset Data
+        </button>
+        <div class="user-profile">
+          <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80" alt="Sarah Jenkins" class="avatar">
+          <div class="user-info">
+            <span class="user-name">Sarah Jenkins</span>
+            <span class="user-role">Emp ID: EMP1001 • Sr. SAP Developer</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Top KPI Summary Bar -->
+    <section class="kpi-bar">
+      <div class="kpi-card blue">
+        <div class="kpi-icon"><i class="ri-calendar-check-line"></i></div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-vacation-remaining">11</span>
+          <span class="kpi-label">Vacation Balance (Days)</span>
+        </div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-icon"><i class="ri-time-line"></i></div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-pending-count">2</span>
+          <span class="kpi-label">Pending Approval</span>
+        </div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-icon"><i class="ri-checkbox-circle-line"></i></div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-approved-count">1</span>
+          <span class="kpi-label">Approved Requests</span>
+        </div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-icon"><i class="ri-close-circle-line"></i></div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-rejected-count">1</span>
+          <span class="kpi-label">Rejected Requests</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Fiori Main Navigation Tabs -->
+    <nav class="fiori-nav-tabs">
+      <button class="nav-tab active" data-tab="list-report">
+        <i class="ri-table-line"></i> List Report UI
+      </button>
+      <button class="nav-tab" data-tab="apply-leave">
+        <i class="ri-add-circle-line"></i> Apply For Leave
+      </button>
+      <button class="nav-tab" data-tab="manager-desk">
+        <i class="ri-shield-check-line"></i> Manager Approval Desk
+        <span class="tab-badge" id="desk-pending-badge">2</span>
+      </button>
+      <button class="nav-tab" data-tab="balances">
+        <i class="ri-pie-chart-line"></i> Leave Balances & Analytics
+      </button>
+      <button class="nav-tab" data-tab="abap-unit">
+        <i class="ri-test-tube-line"></i> ABAP Unit Test Suite
+      </button>
+      <button class="nav-tab" data-tab="code-inspector">
+        <i class="ri-code-s-slash-line"></i> SAP RAP Source Code
+      </button>
+    </nav>
+
+    <!-- Main View Container -->
+    <main class="content-container">
+      
+      <!-- TAB 1: List Report (Fiori Elements UI) -->
+      <section id="view-list-report" class="tab-view active">
+        <div class="filter-bar-card">
+          <div class="filter-header">
+            <h3><i class="ri-filter-3-line"></i> Filter Bar (OData V4 $filter)</h3>
+            <button id="btn-clear-filters" class="fiori-btn text-btn">Clear All Filters</button>
+          </div>
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label for="filter-search">Search Keyword</label>
+              <div class="input-icon-wrapper">
+                <i class="ri-search-line"></i>
+                <input type="text" id="filter-search" placeholder="Search by Employee, Request ID, Reason...">
+              </div>
+            </div>
+            <div class="filter-group">
+              <label for="filter-status">Approval Status</label>
+              <select id="filter-status">
+                <option value="ALL">All Statuses</option>
+                <option value="P">Pending (2)</option>
+                <option value="A">Approved (3)</option>
+                <option value="R">Rejected (1)</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label for="filter-leavetype">Leave Type</label>
+              <select id="filter-leavetype">
+                <option value="ALL">All Leave Types</option>
+                <option value="VACATION">Annual Vacation</option>
+                <option value="SICK">Medical / Sick</option>
+                <option value="CASUAL">Casual / Personal</option>
+                <option value="PARENTAL">Parental</option>
+              </select>
+            </div>
+            <div class="filter-actions">
+              <button id="btn-go-search" class="fiori-btn primary-btn"><i class="ri-play-fill"></i> Go</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-card">
+          <div class="table-header-toolbar">
+            <div class="table-title-group">
+              <h2>Leave Requests <span id="table-count" class="count-chip">(4)</span></h2>
+              <span class="service-binding-info">Exposed via OData V4 Service <code>ZUI_LEAVE_REQ_V4</code></span>
+            </div>
+            <div class="table-toolbar-actions">
+              <button id="btn-new-leave-req" class="fiori-btn primary-btn"><i class="ri-add-line"></i> Apply Leave</button>
+              <button id="btn-run-unit-tests-quick" class="fiori-btn secondary-btn"><i class="ri-flask-line"></i> Run ABAP Tests</button>
+            </div>
+          </div>
+
+          <div class="responsive-table-wrapper">
+            <table class="fiori-table" id="requests-table">
+              <thead>
+                <tr>
+                  <th>Request ID</th>
+                  <th>Employee</th>
+                  <th>Leave Type</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Days</th>
+                  <th>Status</th>
+                  <th>Reason / Notes</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="requests-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: Apply for Leave (EML Form & Validation Engine) -->
+      <section id="view-apply-leave" class="tab-view">
+        <div class="form-container-card">
+          <div class="form-header">
+            <h2><i class="ri-draft-line"></i> New Leave Request (RAP Draft Engine)</h2>
+            <p class="form-subtitle">Submitting triggers ABAP RAP behavior pool validations <code>validateDates</code> and <code>validateLeaveBalance</code>.</p>
+          </div>
+
+          <form id="leave-form" class="fiori-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="form-emp-id">Employee</label>
+                <input type="text" id="form-emp-id" value="EMP1001 - Sarah Jenkins (You)" readonly class="readonly-input">
+              </div>
+
+              <div class="form-group">
+                <label for="form-leave-type">Leave Category <span class="required">*</span></label>
+                <select id="form-leave-type" required>
+                  <option value="VACATION">Annual Vacation (11 days remaining)</option>
+                  <option value="SICK">Medical / Sick Leave (8 days remaining)</option>
+                  <option value="CASUAL">Casual / Personal (3 days remaining)</option>
+                  <option value="PARENTAL">Parental Leave (14 days remaining)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="form-start-date">Start Date <span class="required">*</span></label>
+                <input type="date" id="form-start-date" required>
+              </div>
+
+              <div class="form-group">
+                <label for="form-end-date">End Date <span class="required">*</span></label>
+                <input type="date" id="form-end-date" required>
+              </div>
+
+              <div class="form-group full-width">
+                <div class="duration-live-box" id="duration-preview">
+                  <div class="box-icon"><i class="ri-calculator-line"></i></div>
+                  <div class="box-info">
+                    <span class="box-title">Calculated Duration (ABAP Determination)</span>
+                    <span class="box-value" id="calc-days-val">Select Start and End Dates</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <label for="form-reason">Reason for Leave <span class="required">*</span></label>
+                <textarea id="form-reason" rows="3" placeholder="Provide details regarding your leave application..." required></textarea>
+              </div>
+            </div>
+
+            <!-- Validation Error Alert Container -->
+            <div id="form-validation-alert" class="alert-box error hidden">
+              <i class="ri-error-warning-fill alert-icon"></i>
+              <div class="alert-content">
+                <strong>ABAP RAP Validation Error (EML Error Messages):</strong>
+                <ul id="validation-error-list"></ul>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" id="btn-cancel-leave" class="fiori-btn secondary-btn">Cancel</button>
+              <button type="submit" id="btn-submit-leave" class="fiori-btn primary-btn"><i class="ri-send-plane-line"></i> Submit Leave Request</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB 3: Manager Approval Desk -->
+      <section id="view-manager-desk" class="tab-view">
+        <div class="desk-container">
+          <div class="desk-header">
+            <div>
+              <h2><i class="ri-shield-user-line"></i> Manager Approval Queue</h2>
+              <p class="subtitle">Review and execute <code>APPROVE</code> or <code>REJECT</code> actions defined in <code>ZABS_I_LEAVE_REQ.BDEF</code>.</p>
+            </div>
+          </div>
+
+          <div id="manager-pending-list" class="manager-cards-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: Leave Balances & Analytics -->
+      <section id="view-balances" class="tab-view">
+        <div class="analytics-grid">
+          <div class="balance-cards-container">
+            <h2 class="section-title"><i class="ri-wallet-3-line"></i> Leave Quotas & Balances (EMP1001)</h2>
+            <div id="balance-cards-wrapper" class="balance-cards-grid">
+              <!-- Dynamically populated balance cards -->
+            </div>
+          </div>
+
+          <div class="analytics-charts-card">
+            <h2 class="section-title"><i class="ri-bar-chart-2-line"></i> Quota Utilization Breakdown</h2>
+            <div class="chart-wrapper">
+              <div class="chart-bar-item">
+                <div class="bar-label"><span>Annual Vacation</span> <span>6 / 20 Days Used (30%)</span></div>
+                <div class="progress-track"><div class="progress-fill blue" style="width: 30%"></div></div>
+              </div>
+              <div class="chart-bar-item">
+                <div class="bar-label"><span>Medical / Sick Leave</span> <span>2 / 10 Days Used (20%)</span></div>
+                <div class="progress-track"><div class="progress-fill red" style="width: 20%"></div></div>
+              </div>
+              <div class="chart-bar-item">
+                <div class="bar-label"><span>Casual Leave</span> <span>3 / 7 Days Used (43%)</span></div>
+                <div class="progress-track"><div class="progress-fill yellow" style="width: 43%"></div></div>
+              </div>
+              <div class="chart-bar-item">
+                <div class="bar-label"><span>Parental Leave</span> <span>0 / 14 Days Used (0%)</span></div>
+                <div class="progress-track"><div class="progress-fill purple" style="width: 0%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: ABAP Unit Test Suite Runner -->
+      <section id="view-abap-unit" class="tab-view">
+        <div class="unit-test-container">
+          <div class="unit-test-header">
+            <div>
+              <h2><i class="ri-test-tube-line"></i> ABAP Unit Test Runner (<code>ZCL_TEST_LEAVE_MGMT</code>)</h2>
+              <p class="subtitle">Validates core business rules using SAP ABAP Unit framework (ABAP RAP EML Test Double Framework).</p>
+            </div>
+            <button id="btn-run-all-unit-tests" class="fiori-btn primary-btn"><i class="ri-play-circle-fill"></i> Execute ABAP Unit Suite</button>
+          </div>
+
+          <div class="unit-summary-strip">
+            <div class="summary-metric">
+              <span class="metric-val" id="unit-passed-count">0</span>
+              <span class="metric-lbl green">Passed Tests</span>
+            </div>
+            <div class="summary-metric">
+              <span class="metric-val" id="unit-failed-count">0</span>
+              <span class="metric-lbl red">Failed Tests</span>
+            </div>
+            <div class="summary-metric">
+              <span class="metric-val" id="unit-time-count">0 ms</span>
+              <span class="metric-lbl">Execution Time</span>
+            </div>
+            <div class="summary-metric">
+              <span class="metric-val">100%</span>
+              <span class="metric-lbl">Code Coverage</span>
+            </div>
+          </div>
+
+          <div class="test-results-list" id="unit-test-list">
+            <!-- Dynamically populated test assertions -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: SAP BTP RAP Source Code Inspector -->
+      <section id="view-code-inspector" class="tab-view">
+        <div class="code-inspector-container">
+          <div class="code-nav-tabs">
+            <button class="code-tab active" data-snippet="cds_interface">ZABS_I_LEAVE_REQ (CDS View)</button>
+            <button class="code-tab" data-snippet="cds_projection">ZABS_C_LEAVE_REQ (Projection)</button>
+            <button class="code-tab" data-snippet="bdef">ZABS_I_LEAVE_REQ.BDEF</button>
+            <button class="code-tab" data-snippet="bimp">ZCL_BP_I_LEAVE_REQ (Behavior Pool)</button>
+            <button class="code-tab" data-snippet="unit_tests">ZCL_TEST_LEAVE_MGMT (Unit Tests)</button>
+          </div>
+
+          <div class="code-viewer-panel">
+            <div class="code-header">
+              <span class="code-title" id="code-viewer-title">ZABS_I_LEAVE_REQ (CDS Root Interface View)</span>
+              <span class="code-badge" id="code-viewer-type">CDS View Entity</span>
+            </div>
+            <pre class="code-block"><code id="code-viewer-content"></code></pre>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Fiori Elements Object Page Modal Drawer -->
+    <div id="modal-object-page" class="modal-overlay hidden">
+      <div class="modal-dialog large">
+        <div class="modal-header">
+          <div class="object-page-title-group">
+            <span class="type-tag">Leave Request Object Page</span>
+            <h2 id="obj-req-id">LR-2026-0042</h2>
+            <span id="obj-emp-name" class="subtitle">Sarah Jenkins • EMP1001</span>
+          </div>
+          <button class="modal-close" id="btn-close-obj-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="object-page-header-facts">
+            <div class="fact-item">
+              <span class="fact-lbl">Approval Status</span>
+              <span class="status-chip" id="obj-status-badge">Pending</span>
+            </div>
+            <div class="fact-item">
+              <span class="fact-lbl">Leave Category</span>
+              <span class="fact-val" id="obj-leave-type">VACATION</span>
+            </div>
+            <div class="fact-item">
+              <span class="fact-lbl">Duration</span>
+              <span class="fact-val" id="obj-duration">5 Working Days</span>
+            </div>
+            <div class="fact-item">
+              <span class="fact-lbl">Start - End Date</span>
+              <span class="fact-val" id="obj-date-range">Oct 12, 2026 - Oct 16, 2026</span>
+            </div>
+          </div>
+
+          <div class="object-page-sections">
+            <div class="section-card">
+              <h3><i class="ri-information-line"></i> Request Details</h3>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <label>Department:</label>
+                  <span id="obj-dept">SAP BTP Development</span>
+                </div>
+                <div class="detail-item">
+                  <label>Assigned Approver:</label>
+                  <span id="obj-manager">MGR2001 (Alexander Vance)</span>
+                </div>
+                <div class="detail-item full-width">
+                  <label>Employee Note / Reason:</label>
+                  <p id="obj-reason" class="reason-text"></p>
+                </div>
+                <div class="detail-item full-width" id="obj-rejection-container">
+                  <label class="red-lbl">Rejection Reason / Comments:</label>
+                  <p id="obj-rejection-reason" class="rejection-text"></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-card">
+              <h3><i class="ri-history-line"></i> RAP Action History & EML Logs</h3>
+              <div class="timeline" id="obj-timeline">
+                <!-- Timeline populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" id="obj-modal-actions">
+          <!-- Action buttons approve/reject -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Rejection Reason Dialog Modal -->
+    <div id="modal-reject-dialog" class="modal-overlay hidden">
+      <div class="modal-dialog medium">
+        <div class="modal-header">
+          <h2>Manager Rejection Action</h2>
+          <button class="modal-close" id="btn-close-reject-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="dialog-prompt">Please specify the reason for rejecting leave request <strong id="reject-req-id">LR-2026-0042</strong>:</p>
+          <div class="form-group">
+            <textarea id="reject-reason-input" rows="4" placeholder="Enter reason (e.g., project deliverable conflict, insufficient coverage)..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-cancel-reject" class="fiori-btn secondary-btn">Cancel</button>
+          <button id="btn-confirm-reject" class="fiori-btn danger-btn"><i class="ri-close-circle-line"></i> Reject Leave Request</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
